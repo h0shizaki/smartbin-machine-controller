@@ -1,33 +1,18 @@
+import servo_controller;
 import time;
-import wiringpi;
-from wiringpi import GPIO;
+import asyncio;
+import websockets;
 
-wiringpi.wiringPiSetup()
-pwm_pin = 2
-PWM_RANGE = 1024
-
-wiringpi.softPwmCreate(pwm_pin, 0, PWM_RANGE)
-
-
-def open_servo():
-	wiringpi.softPwmWrite(pwm_pin, 7)
-	wiringpi.delay(100)
-
-def close_servo():
-	wiringpi.softPwmWrite(pwm_pin, 19)
-	wiringpi.delay(100)
+async def servo_control_handler(ws):
+	try:
+		servo_controller.open_servo()
+		time.sleep(1)
+		servo_controller.close_servo()
+		await ws.send("OK")
+	except:
+		print("FAILED")
 
 
-def servo_move_to(pin, angle):
-	pwm_value = int((angle / 180 * 51 ) + 51)
-	wiringpi.softPwmWrite(pin, pwm_value)
-	wiringpi.delay(10)
-
-
-wiringpi.softPwmWrite(pwm_pin, 7)
-wiringpi.delay(100)
-time.sleep(3)
-wiringpi.softPwmWrite(pwm_pin, 19)
-wiringpi.delay(100)
-
-wiringpi.wiringPiSetup()
+start_server = websockets.serve(servo_control_handler, "0.0.0.0", 8765)
+asyncio.get_event_loop().run_until_complete(start_server)
+asyncio.get_event_loop().run_forever()
